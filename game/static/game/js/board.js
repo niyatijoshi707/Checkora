@@ -965,6 +965,7 @@
                 startNewGame('pvp');
             };
 
+            
             if (welcomeAIBtn) welcomeAIBtn.onclick = () => {
                 modeSelection.style.display = 'none';
                 pveOptions.style.display = 'flex';
@@ -981,6 +982,7 @@
 
                 if (blackInput) {
                     blackInput.style.display = 'none';
+                    blackInput.value = 'AI';
                     blackInput.classList.remove('input-error');
                 }
 
@@ -990,10 +992,10 @@
 
                 nameInputs.style.display = 'flex';
             };
+            
+            
             if (backToModes) backToModes.onclick = () => {
-                pveOptions.style.display = 'none';
-                modeSelection.style.display = 'flex';
-                nameInputs.style.display = 'flex';
+                prepareWelcomeForPvP(false);
 
                 const whiteInput = document.getElementById('whiteNameInput');
                 const blackInput = document.getElementById('blackNameInput');
@@ -1013,7 +1015,6 @@
                     errorDiv.style.display = 'none';
                 }
             };
-            
             const colorBtns = pveOptions.querySelectorAll('.color-choice');
             colorBtns.forEach(btn => {
                 btn.onclick = () => {
