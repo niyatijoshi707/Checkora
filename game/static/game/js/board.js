@@ -1942,7 +1942,8 @@
             if (!navigator.webdriver) {
                 window.addEventListener('beforeunload', (e) => {
                if (!paused) {
-            navigator.sendBeacon('/api/pause/', JSON.stringify({ pause: true }));
+                    const blob = new Blob([JSON.stringify({ pause: true })], { type: 'application/json' });
+                    navigator.sendBeacon('/api/pause/', blob);
                    }
                 });
             }
@@ -1961,11 +1962,11 @@ document.querySelectorAll('a[href="/"]').forEach(link => {
     });
 });
 
-leaveConfirmYes.addEventListener('click', () => {
+if (leaveConfirmYes) leaveConfirmYes.addEventListener('click', () => {
     window.location.href = '/';
 });
 
-leaveConfirmNo.addEventListener('click', () => {
+if (leaveConfirmNo) leaveConfirmNo.addEventListener('click', () => {
     leaveConfirmOverlay.style.display = 'none';
 });
             
