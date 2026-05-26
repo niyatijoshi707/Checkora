@@ -41,6 +41,8 @@
             let paused = false;
             let timerInterval = null;
             let pendingPromo = null;
+            let blindfoldMode = false;
+            let illegalMoveCount = 0;
 
             let whiteAlertFired = false;
             let blackAlertFired = false;
@@ -211,6 +213,32 @@
                 if (a11yAnnouncer) {
                     a11yAnnouncer.textContent = '';
                     setTimeout(() => { a11yAnnouncer.textContent = msg; }, 50);
+                }
+            }
+
+            let flashTimeout = null;
+            function flashBoard() {
+                if (boardEl) {
+                    boardEl.classList.remove('flash-error');
+                    void boardEl.offsetWidth;
+                    boardEl.classList.add('flash-error');
+                    if (flashTimeout) clearTimeout(flashTimeout);
+                    flashTimeout = setTimeout(() => {
+                        boardEl.classList.remove('flash-error');
+                    }, 2000);
+                }
+                
+                if (blindfoldMode) {
+                    illegalMoveCount++;
+                    if (illegalMoveCount >= 3) {
+                        illegalMoveCount = 0;
+                        document.body.classList.remove('blindfold-mode');
+                        setTimeout(() => {
+                            if (blindfoldMode) {
+                                document.body.classList.add('blindfold-mode');
+                            }
+                        }, 3000);
+                    }
                 }
             }
 
@@ -454,6 +482,10 @@
                 if (drawBtn) drawBtn.style.display = gameMode === 'pvp' ? 'block' : 'none';
                 if (pauseBtn)  pauseBtn.style.display  = 'block';  
                 if (resignBtn) resignBtn.style.display = 'block'; 
+                const isActive = ['active', 'check', 'ok'].includes(data.game_status);
+                if (newPvPBtn) newPvPBtn.style.display = isActive ? 'none' : '';
+                if (newAIBtn) newAIBtn.style.display = isActive ? 'none' : '';
+                if (newFenBtn) newFenBtn.style.display = isActive ? 'none' : '';
 
                 updatePlayerNames(data);
                 updateTurn();
@@ -551,9 +583,26 @@
                         d.draggable = true;
                         d.ondragstart = e => {
                             const piece = board[r][c];
-                            if (!piece || paused || gameOver) return e.preventDefault();
-                            const isPremoveDrag = gameMode === 'ai' && turn !== playerColor && pColor(piece) === playerColor;
-                            if (gameMode === 'ai' && turn !== playerColor && !isPremoveDrag) return e.preventDefault();
+                            if (!piece) {
+                                if (blindfoldMode) {
+                                    showStatus('No piece there', true);
+                                    flashBoard();
+                                }
+                                return e.preventDefault();
+                            }
+                            if (paused || gameOver) return e.preventDefault();
+                            
+                            const isPremovedDrag = gameMode === 'ai' && turn !== playerColor && pColor(piece) === playerColor;
+                            
+                            // If it's the AI's turn, only allow dragging if it's a valid premove
+                            if (gameMode === 'ai' && turn !== playerColor && !isPremovedDrag) {
+                                return e.preventDefault();
+                            }
+                            
+                            // For all other normal moves, you can only drag your own pieces on your turn
+                            if (!isPremovedDrag && pColor(piece) !== turn) {
+                                return e.preventDefault();
+                            }
                             
                             if (e.dataTransfer) {
                                 e.dataTransfer.setData('text/plain', 'piece-move');
@@ -854,6 +903,11 @@
                     return;
                 }
 
+                if (fr === tr && fc === tc) {
+                    deselect();
+                    return;
+                }
+
                 if (isPromotionMove(fr, fc, tr)) {
                     await animateMove(fr, fc, tr, tc);
 
@@ -902,6 +956,7 @@
 
                     const data = await post('/api/move/', body);
                         if (data.valid) {
+                            illegalMoveCount = 0;
                             playSound(data);
                             if (!skipAnimation) await animateMove(fr, fc, tr, tc);
                             board = parseBoard(data.board);
@@ -951,6 +1006,7 @@
                         }
                     } else {
                         showStatus(data.message, true);
+                        flashBoard();
                         deselect();
                     }
                 } catch (e) {
@@ -1141,14 +1197,29 @@
             }
 
             function onDragStart(e, r, c) {
-                if (paused || pColor(board[r][c]) !== turn) {
-                    const isPremoveDrag = gameMode === 'ai' && turn !== playerColor && pColor(board[r][c]) === playerColor;
-                    if (!isPremoveDrag) return e.preventDefault();
+
+                const piece = board[r][c];
+                if (!piece) {
+                    if (blindfoldMode) {
+                        showStatus('No piece there', true);
+                        flashBoard();
+                    }
+                    return e.preventDefault();
                 }
-                if (gameMode === 'ai' && turn !== playerColor) {
-                    const isPremoveDrag = pColor(board[r][c]) === playerColor;
-                    if (!isPremoveDrag) return e.preventDefault();
+                if (paused || gameOver) return e.preventDefault();
+                
+                const isPremovedDrag = gameMode === 'ai' && turn !== playerColor && pColor(piece) === playerColor;
+                
+                // If it's the AI's turn, only allow dragging if it's a valid premove
+                if (gameMode === 'ai' && turn !== playerColor && !isPremovedDrag) {
+                    return e.preventDefault();
                 }
+                
+                // For all normal moves, you can only drag your own pieces on your turn
+                if (!isPremovedDrag && pColor(piece) !== turn) {
+                    return e.preventDefault();
+                }
+
                 dragging = true;
                 dragSrc = { r, c };
                 selectPiece(r, c);
@@ -1271,6 +1342,13 @@
                 gameOver = true;
                 paused = true;
                 clearInterval(timerInterval);
+                
+                if (blindfoldMode) {
+                    blindfoldMode = false;
+                    document.body.classList.remove('blindfold-mode');
+                    const blindfoldBtn = document.getElementById('blindfoldBtn');
+                    if (blindfoldBtn) blindfoldBtn.textContent = 'Blindfold: OFF';
+                }
             
                 let title = '', message = '';
                 let isCelebration = false; // Track if this is a win (not draw/stalemate)
@@ -1309,6 +1387,9 @@
                 if (resignBtn) resignBtn.style.display = 'none';
                 if (drawBtn) drawBtn.style.display = 'none';
                 if (pauseBtn) pauseBtn.style.display = 'none';
+                if (newPvPBtn) newPvPBtn.style.display = '';
+                if (newAIBtn) newAIBtn.style.display = '';
+                if (newFenBtn) newFenBtn.style.display = '';
 
                 let durationText = '';
 
@@ -1589,15 +1670,32 @@
             }
 
             async function resumeGame() {
-                if (!paused) return;
-                const d = await post('/api/pause/', { pause: false });
-                paused = d.paused;
-                whiteTime = d.white_time;
-                blackTime = d.black_time;
-                updatePauseUI();
-                renderClocks();
-                startTimer();
-                queueAIMoveIfNeeded();
+                try {
+                    const d = await post('/api/pause/', { pause: false });
+
+                    paused = false;
+
+                    if (d.white_time !== undefined) {
+                        whiteTime = d.white_time;
+                    }
+
+                    if (d.black_time !== undefined) {
+                        blackTime = d.black_time;
+                    }
+
+                    updatePauseUI();
+                    renderClocks();
+
+                    clearInterval(timerInterval);
+                    startTimer();
+
+                    boardEl.classList.remove('paused');
+
+                    queueAIMoveIfNeeded();
+
+                } catch (e) {
+                    console.error("Resume failed", e);
+                }
             }
 
             /* ==========================================================
@@ -1752,6 +1850,9 @@
                 if (resignBtn) resignBtn.style.display = '';
                 if (pauseBtn) pauseBtn.style.display = '';
                 if (drawBtn) drawBtn.style.display = (gameMode === 'pvp') ? 'block' : 'none';
+                if (newPvPBtn) newPvPBtn.style.display = 'none';
+                if (newAIBtn) newAIBtn.style.display = 'none';
+                if (newFenBtn) newFenBtn.style.display = 'none';
                 if (gameMode === 'ai') {
                     flipped = (playerColor === 'black');
                 } else {
@@ -1766,7 +1867,10 @@
                 }
                 movesEl.innerHTML = '<span class="placeholder">No moves yet</span>';
                 wCapEl.innerHTML = bCapEl.innerHTML = '';
-
+                lastMove = null;
+                highlightedSquare = null;
+                selected = null;
+                hints = [];
                 await loadGame();
                 // Apply active state after UI reload
                 updateModeButtonsUI(gameMode);
@@ -1811,6 +1915,44 @@
                     }
                 }
                 if (errorDiv) errorDiv.style.display = 'none';
+            }
+
+            function dismissGameOverOverlay() {
+                gameOverOverlay.classList.remove('active');
+                gameOverOverlay.classList.remove('game-over-celebration');
+                const confettiContainer = gameOverOverlay.querySelector('.confetti-container');
+                if (confettiContainer) {
+                    confettiContainer.remove();
+                }
+            }
+
+            function openWelcomeForNewGame() {
+                dismissGameOverOverlay();
+                prepareWelcomeForPvP(true);
+
+                const whiteInput = document.getElementById('whiteNameInput');
+                const blackInput = document.getElementById('blackNameInput');
+                if (whiteInput) {
+                    whiteInput.value = currentWhiteName || '';
+                }
+                if (blackInput) {
+                    const aiNames = ['AI', 'ai'];
+                    blackInput.value = aiNames.includes(currentBlackName) ? '' : (currentBlackName || '');
+                }
+                if (welcomeFenInput) welcomeFenInput.value = '';
+                if (welcomeFenError) welcomeFenError.textContent = '';
+
+                selectedPveColor = 'white';
+                pveOptions?.querySelectorAll('.color-choice').forEach(btn => {
+                    const isWhite = btn.dataset.color === 'white';
+                    btn.classList.toggle('active', isWhite);
+                    btn.style.borderColor = isWhite ? '#f0c040' : '#444';
+                });
+
+                if (welcomeResumeBtn && gameOver) {
+                    welcomeResumeBtn.style.display = 'none';
+                }
+                welcomeOverlay.classList.add('active');
             }
 
             if (welcomeFenInput) {
@@ -2031,8 +2173,7 @@
                     "Abandon Game?",
                     "Your current progress will be lost.<br>Are you sure you want to start a new game?",
                     () => {
-                        prepareWelcomeForPvP(true);
-                        welcomeOverlay.classList.add('active');
+                        openWelcomeForNewGame();
                     },
                     '#ff6b6b'
                 );
@@ -2141,31 +2282,32 @@ if (resignBtn) resignBtn.onclick = () => {
             };
 
             if (gameOverStartBtn) gameOverStartBtn.onclick = () => {
-                const mode = document.querySelector('input[name="go_mode"]:checked').value;
-                const diff = document.getElementById('goDifficultySelect').value;
-                const timeLimitMins = parseInt(document.getElementById('goTimerSelect').value, 10);
-                gameOverOverlay.classList.remove('active');
-                gameOverOverlay.classList.remove('game-over-celebration');
-
-                const confettiContainer = gameOverOverlay.querySelector('.confetti-container');
-                if (confettiContainer) {
-                 confettiContainer.remove();
-                }
-
-                const swappedColor = playerColor === 'white' ? 'black' : 'white';
-                if (mode === 'ai') {
-                    showSideSelectionModal(side => startNewGame(mode, side, diff, null, timeLimitMins));
-                }
-               
-                else {
-                    startNewGame(mode, swappedColor, diff, null, timeLimitMins,
-                        { white: currentBlackName, black: currentWhiteName });
-                }
+                openWelcomeForNewGame();
             };
            if (gameOverExitBtn) gameOverExitBtn.addEventListener('click', () => {
     const confettiContainer = gameOverOverlay.querySelector('.confetti-container');
     if (confettiContainer) confettiContainer.remove();
 });
+
+            // ========== Exit to Menu Logic ==========
+            const exitToMenuBtn = document.getElementById('exitToMenuBtn');
+            if (exitToMenuBtn) {
+                exitToMenuBtn.onclick = () => {
+                    // 1. Hide the Game Over modal and clear celebrations
+                    gameOverOverlay.classList.remove('active', 'game-over-celebration');
+                    const confettiContainer = gameOverOverlay.querySelector('.confetti-container');
+                    if (confettiContainer) {
+                        confettiContainer.remove();
+                    }
+
+                    // 2. Hide the chess board layout
+                    gameLayout.style.visibility = 'hidden';
+
+                    // 3. Reset and show the Welcome/Setup Menu
+                    prepareWelcomeForPvP(true);
+                    welcomeOverlay.classList.add('active');
+                };
+            }
 
             // Theme Switcher
             function initThemeSwitcher() {
@@ -2227,6 +2369,7 @@ if (resignBtn) resignBtn.onclick = () => {
                                 manualMoveError.textContent = 'Invalid format (e.g. e2e4)';
                                 manualMoveError.style.display = 'block';
                             }
+                            flashBoard();
                             return;
                         }
                         
@@ -2245,6 +2388,7 @@ if (resignBtn) resignBtn.onclick = () => {
                                 manualMoveError.textContent = 'Game is not active';
                                 manualMoveError.style.display = 'block';
                             }
+                            flashBoard();
                             return;
                         }
                         if (gameMode === 'ai' && turn !== playerColor) {
@@ -2252,6 +2396,7 @@ if (resignBtn) resignBtn.onclick = () => {
                                 manualMoveError.textContent = 'Not your turn';
                                 manualMoveError.style.display = 'block';
                             }
+                            flashBoard();
                             return;
                         }
                         const p = board[fr][fc];
@@ -2260,6 +2405,7 @@ if (resignBtn) resignBtn.onclick = () => {
                                 manualMoveError.textContent = 'Invalid piece';
                                 manualMoveError.style.display = 'block';
                             }
+                            flashBoard();
                             return;
                         }
                         
@@ -2268,6 +2414,7 @@ if (resignBtn) resignBtn.onclick = () => {
                                 manualMoveError.textContent = 'Promotion piece required (e.g. e7e8q)';
                                 manualMoveError.style.display = 'block';
                             }
+                            flashBoard();
                             return;
                         }
                         
@@ -2616,5 +2763,28 @@ if (leaveConfirmNo) leaveConfirmNo.addEventListener('click', () => {
                 touchDragSrc = null;
                 touchDragging = false;
             }, { passive: false });
+
+            boardEl.addEventListener('touchcancel', (e) => {
+                if (!touchDragSrc) return;
+
+                if (touchDragging) {
+                    const srcSquareEl = sq(touchDragSrc.r, touchDragSrc.c);
+                    const pieceImg = srcSquareEl ? srcSquareEl.querySelector('.piece') : null;
+                    if (pieceImg) {
+                        pieceImg.classList.remove('touch-dragging-original');
+                    }
+
+                    if (activeTouchPieceClone) {
+                        activeTouchPieceClone.remove();
+                        activeTouchPieceClone = null;
+                    }
+
+                    deselect();
+                }
+
+                touchStartPos = null;
+                touchDragSrc = null;
+                touchDragging = false;
+            }, { passive: true });
 
 })();

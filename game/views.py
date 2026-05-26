@@ -128,7 +128,11 @@ def valid_moves(request):
 @require_POST
 def new_game(request):
     """Reset the game to the initial position with selected mode."""
-    data = json.loads(request.body or '{}')
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'valid': False, 'message': 'Invalid request data.'}, status=400)
+    
     mode = data.get('mode', 'pvp')
     difficulty = data.get('difficulty', 'medium')
     fen = data.get('fen')
@@ -306,7 +310,11 @@ def set_pause(request):
     if not game_data:
         return JsonResponse({'paused': False})
 
-    data = json.loads(request.body or '{}')
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'valid': False, 'message': 'Invalid request data.'}, status=400)
+
     pause = data.get('pause', True)
 
     game = ChessGame.from_dict(game_data)
@@ -416,16 +424,30 @@ def offer_draw(request):
     """Handle draw offers and agreements."""
     game_data = request.session.get('game')
     if not game_data:
-        err_msg = 'No active game.'
         return JsonResponse(
-            {'success': False, 'message': err_msg}, status=400
+            {'success': False, 'message': 'No active game.'}, status=400
         )
 
-    data = json.loads(request.body or '{}')
-    action = data.get('action')  # 'offer' or 'accept'
+    try:
+        data = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {'valid': False, 'message': 'Invalid request data.'}, status=400
+        )
+
+    action = data.get('action')
+
+    if action not in ('offer', 'accept', 'decline'):
+        return JsonResponse(
+            {'success': False, 'message': 'Invalid action.'}, status=400
+        )
 
     if action == 'accept':
         game = ChessGame.from_dict(game_data)
+        if game.game_status != 'active':
+            return JsonResponse(
+                {'success': False, 'message': 'Game is not active.'}, status=400
+            )
         game.game_status = 'draw'
         game.draw_reason = 'agreement'
         request.session['game'] = game.to_dict()
@@ -438,7 +460,6 @@ def offer_draw(request):
         })
 
     return JsonResponse({'success': True})
-
 
 @require_POST
 def resign_game(request):
@@ -763,16 +784,33 @@ class CustomPasswordResetView(PasswordResetView):
     def post(self, request, *args, **kwargs):
 
         email = request.POST.get('email', '').strip().lower()
+        users = User.objects.filter(email=email)
 
+        if users.count() > 1 and not request.POST.get(
+            'selected_username'
+        ):
+
+            usernames = users.values_list(
+                'username',
+                flat=True
+            )
+
+            return render(
+                request,
+                'game/password_reset.html',
+                {
+                    'form': self.form_class,
+                    'usernames': usernames,
+                    'email': email
+                }
+            )
         if not email:
-
             messages.error(
                 request,
                 'Please enter a valid email address.'
             )
 
             return redirect('password_reset')
-
         cache_key = (f"password_reset_cooldown_{email}")
 
         if cache.get(cache_key):
@@ -784,6 +822,30 @@ class CustomPasswordResetView(PasswordResetView):
 
             return redirect('password_reset')
         cache.set(cache_key, True, timeout=60)
+        selected_username = request.POST.get(
+            'selected_username'
+        )
+
+        if selected_username:
+
+            selected_user = User.objects.filter(
+                username=selected_username,
+                email=email
+            ).first()
+
+            from django.contrib.auth.forms import (
+                PasswordResetForm
+            )
+
+            class SingleUserPasswordResetForm(
+                PasswordResetForm
+            ):
+
+                def get_users(self, email):
+
+                    return [selected_user]
+
+            self.form_class = (SingleUserPasswordResetForm)
         return super().post(
             request,
             *args,
@@ -903,3 +965,20 @@ def terms_view(request):
 def contact_view(request):
     """Directly serve the static contact page template instance."""
     return render(request, 'game/contact.html')
+
+def password_reset_account_selection(request):
+
+    email = request.GET.get('email')
+
+    users = User.objects.filter(email=email)
+
+    return render(
+        request,
+        'game/password_reset_account_selection.html',
+        {
+            'users': users,
+            'email': email
+        }
+    )
+
+    
