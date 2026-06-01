@@ -2566,6 +2566,7 @@
                 }
                 if (confirmMessage) confirmMessage.innerHTML = msg;
                 confirmCallback = callback;
+                boardEl.classList.add('confirm-open');
                 confirmOverlay.classList.add('active');
             }
 
@@ -3156,14 +3157,21 @@
             };
 
             if (confirmYesBtn) confirmYesBtn.onclick = () => {
-                confirmOverlay.classList.remove('active');
-                if (confirmCallback) confirmCallback();
-                confirmCallback = null;
-            };
+    boardEl.classList.remove('confirm-open');
+
+    confirmOverlay.classList.remove('active');
+
+    if (confirmCallback) confirmCallback();
+
+    confirmCallback = null;
+};
             if (confirmNoBtn) confirmNoBtn.onclick = () => {
-                confirmOverlay.classList.remove('active');
-                confirmCallback = null;
-            };
+    boardEl.classList.remove('confirm-open');
+
+    confirmOverlay.classList.remove('active');
+
+    confirmCallback = null;
+};
 
             if (newPvPBtn) newPvPBtn.onclick = () => {
                 // Clear any lingering celebration effects

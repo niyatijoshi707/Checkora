@@ -1640,7 +1640,7 @@ body {
 }
 
 
-.chessboard.paused::after {
+.chessboard.paused:not(.confirm-open)::after {
     content: "Resume to Continue";
     position: absolute;
     top: 50%;
