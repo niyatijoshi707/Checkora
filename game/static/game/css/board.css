@@ -71,6 +71,7 @@ body {
 /* Logo text */ 
 .logo-text {
     font-family: Cinzel, serif;
+    font-size: 26px;
     font-weight: 700;
     letter-spacing: 2px;
 }
