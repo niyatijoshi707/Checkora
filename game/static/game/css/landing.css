@@ -92,15 +92,31 @@ body {
 }
 
 .nav-links a {
+    position: relative;
     text-decoration: none;
     color: var(--text-primary);
     font-size: 0.95rem;
     font-weight: 500;
-    transition: color 0.2s;
+    transition: color 0.3s ease;
+}
+
+.nav-links a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    width: 0;
+    height: 2px;
+    background-color: var(--accent-gold);
+    transition: width 0.3s ease;
 }
 
 .nav-links a:hover {
     color: var(--accent-gold);
+}
+
+.nav-links a:hover::after {
+    width: 100%;
 }
 
 .nav-right {
@@ -199,9 +215,11 @@ body {
 .profile-dropdown:hover .dropdown-content {
     display: block;
 }
+
 .profile-dropdown:focus-within .dropdown-content {
     display: block;
 }
+
 .dropdown-content a,
 .logout-option {
     display: block;
@@ -229,6 +247,7 @@ body {
 .dropdown-content .delete-option:hover {
     background: rgba(239, 68, 68, 0.12);
 }
+
 .back-btn {
     position: absolute;
     top: 2rem;
