@@ -33,6 +33,30 @@
         <div class="card"><div class="num">{{ user_ai_wins }}</div><div class="label">User Wins vs AI</div></div>
         <div class="card"><div class="num">{{ ai_wins }}</div><div class="label">AI Wins</div></div>
         <div class="card"><div class="num">{{ ai_draws }}</div><div class="label">Draws</div></div>
+        <div class="card">
+            <div class="num">{{ progress.level }}</div>
+            <div class="label">🏆 Level</div>
+        </div>
+
+        <div class="card">
+            <div class="num">{{ progress.xp }}</div>
+            <div class="label">⚡ XP</div>
+        </div>
+    </div>
+
+    <div style="text-align:center; margin-top:20px; margin-bottom:20px;">
+        <a href="{% url 'achievements' %}"
+            style="
+                background:#f0c040;
+                color:#0f0f1a;
+                padding:12px 20px;
+                border-radius:8px;
+                font-weight:bold;
+                text-decoration:none;
+                display:inline-block;
+            ">
+            🏆 View Achievements
+        </a>
     </div>
 
     <h2>Recent Games</h2>
