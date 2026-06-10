@@ -1109,13 +1109,15 @@ class CustomPasswordResetView(PasswordResetView):
     def _client_ip(self, request):
         remote_addr = request.META.get('REMOTE_ADDR', '')
         trusted_ips = getattr(settings, 'TRUSTED_PROXY_IPS', [])
-        is_production = getattr(settings, 'IS_PRODUCTION', False)
-        if remote_addr in trusted_ips or is_production:
-            forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR', '')
-            if forwarded_for:
-                parts = [p.strip() for p in forwarded_for.split(',') if p.strip()]
-                if parts:
-                    return parts[0]
+        if not _is_trusted_proxy(remote_addr, trusted_ips):
+            return remote_addr
+
+        forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        if forwarded_for:
+            hops = [h.strip() for h in forwarded_for.split(',') if h.strip()]
+            for hop in reversed(hops):
+                if not _is_trusted_proxy(hop, trusted_ips):
+                    return hop
         return remote_addr
 
     def _format_duration(self, seconds):

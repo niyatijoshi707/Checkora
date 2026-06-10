@@ -233,7 +233,16 @@ TRUSTED_PROXIES = os.environ.get('TRUSTED_PROXIES', '127.0.0.1,::1').split(',')
 TRUSTED_PROXIES = [ip.strip() for ip in TRUSTED_PROXIES if ip.strip()]
 
 # Trusted proxies for password reset rate limiting client IP extraction
-# Local dev can add '127.0.0.1' to TRUSTED_PROXY_IPS if running behind a local proxy
-TRUSTED_PROXY_IPS = []
+TRUSTED_PROXY_IPS = [
+    ip.strip()
+    for ip in os.environ.get('TRUSTED_PROXY_IPS', '').split(',')
+    if ip.strip()
+]
+
+if IS_PRODUCTION and not TRUSTED_PROXY_IPS:
+    raise ImproperlyConfigured(
+        'TRUSTED_PROXY_IPS must be set in production'
+    )
+
 
 
