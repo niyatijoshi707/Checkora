@@ -48,6 +48,9 @@ from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
 
+from django.db.models import Avg, Max, Min, Sum
+from datetime import timedelta
+
 from .engine import ChessGame
 from .models import (
     GameResult,
@@ -1591,6 +1594,26 @@ def stats_view(request):
         user=request.user
     ).exclude(mode__in=['', None])
 
+    total_games = user_results.count()
+
+    total_wins = user_results.filter(
+        winner=F("player_color")
+    ).exclude(
+        winner="draw"
+    ).count()
+
+    total_losses = user_results.filter(
+        Q(player_color="white", winner="black") |
+        Q(player_color="black", winner="white")
+    ).count()
+
+    total_draws = user_results.filter(winner="draw").count()
+
+    overall_win_rate = (
+        round((total_wins / total_games) * 100, 2)
+        if total_games > 0 else 0
+    )
+
     recent = user_results.order_by('-played_at')[:20]
     progress, _ = UserProgress.objects.get_or_create(
         user=request.user
@@ -1617,8 +1640,98 @@ def stats_view(request):
 
     history = RatingHistory.objects.filter(
         user=request.user
-    )[:10]
+    )
 
+    recent_history = history[:10]
+    
+    # Color Statistics
+    games_as_white = user_results.filter(
+        player_color="white"
+    ).count()
+
+    games_as_black = user_results.filter(
+        player_color="black"
+    ).count()
+
+    white_wins = user_results.filter(
+        player_color="white",
+        winner="white"
+    ).count()
+
+    black_wins = user_results.filter(
+        player_color="black",
+        winner="black"
+    ).count()
+
+    white_win_rate = (
+        round((white_wins / games_as_white) * 100, 2)
+        if games_as_white else 0
+    )
+
+    black_win_rate = (
+        round((black_wins / games_as_black) * 100, 2)
+        if games_as_black else 0
+    )
+    
+    # Activity Statistics
+    week_ago = timezone.now() - timedelta(days=7)
+    month_ago = timezone.now() - timedelta(days=30)
+
+    games_this_week = user_results.filter(
+        played_at__gte=week_ago
+    ).count()
+
+    games_this_month = user_results.filter(
+        played_at__gte=month_ago
+    ).count()
+
+    # Rating Analytics
+    if history.exists():
+        highest_rating = max(
+            history.aggregate(Max("new_rating"))["new_rating__max"],
+            history.aggregate(Max("old_rating"))["old_rating__max"]
+        )
+
+        lowest_rating = min(
+            history.aggregate(Min("new_rating"))["new_rating__min"],
+            history.aggregate(Min("old_rating"))["old_rating__min"]
+        )
+    else:
+        highest_rating = rating.rating
+        lowest_rating = rating.rating
+        
+    average_rating = history.aggregate(
+        Avg("new_rating")
+    )["new_rating__avg"] or rating.rating
+
+    total_rating_change = history.aggregate(
+        Sum("rating_change")
+    )["rating_change__sum"] or 0
+
+    # Learning Progress
+    lessons_completed = LessonProgress.objects.filter(
+        user=request.user,
+        completed=True
+    ).count()
+
+    total_lessons = sum(
+        len(level["lessons"])
+        for level in LESSON_LEVELS
+    )
+    lesson_completion_percentage = (
+        round(
+            (lessons_completed / total_lessons) * 100,
+            2
+        )
+        if total_lessons > 0
+        else 0
+    )
+    
+    # Puzzle Analytics
+    puzzle_stats, _ = PuzzleStats.objects.get_or_create(
+        user=request.user
+    )
+    
     return render(request, 'game/stats.html', {
         'recent': recent,
         'ai_total': ai_total,
@@ -1628,7 +1741,30 @@ def stats_view(request):
         'win_percentage': round(win_percentage, 2),
         'progress': progress,
         'rating': rating,
-        'history': history,
+        'history': recent_history,
+        
+        "total_games": total_games,
+        "total_wins": total_wins,
+        "total_losses": total_losses,
+        "total_draws": total_draws,
+        "overall_win_rate": overall_win_rate,
+
+        "games_as_white": games_as_white,
+        "games_as_black": games_as_black,
+        "white_win_rate": white_win_rate,
+        "black_win_rate": black_win_rate,
+
+        "highest_rating": highest_rating,
+        "lowest_rating": lowest_rating,
+        "average_rating": round(average_rating, 2),
+        "total_rating_change": total_rating_change,
+        "games_this_week": games_this_week,
+        "games_this_month": games_this_month,
+
+        "lessons_completed": lessons_completed,
+        "lesson_completion_percentage": lesson_completion_percentage,
+
+        "puzzle_stats": puzzle_stats,
     })
 
 @login_required
