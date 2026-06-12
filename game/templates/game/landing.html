@@ -441,36 +441,54 @@
                     </div>
 
                     <!-- Card 3 — Technical Architecture -->
-                    <div class="about-card">
+                      <div class="about-card">
                         <div class="about-card-visual">
-                            <div class="tech-diagram">
-                                <div class="tech-node frontend">
-                                    <span class="tech-node-icon">🌐</span>
-                                    <span class="tech-node-label">Django</span>
-                                    <span class="tech-node-sub">Frontend & Routing</span>
-                                </div>
-                                <div class="tech-arrows">
-                                    <div class="tech-arrow-line">
-                                        <div class="tech-arrow-dot"></div>
-                                    </div>
-                                </div>
-                                <div class="tech-node python">
-                                    <span class="tech-node-icon">🐍</span>
-                                    <span class="tech-node-label">Python</span>
-                                    <span class="tech-node-sub">Logic & Orchestration</span>
-                                </div>
-                                <div class="tech-arrows">
-                                    <div class="tech-arrow-line">
-                                        <div class="tech-arrow-dot"></div>
-                                    </div>
-                                </div>
-                                <div class="tech-node cpp">
-                                    <span class="tech-node-icon">⚡</span>
-                                    <span class="tech-node-label">C++17</span>
-                                    <span class="tech-node-sub">Minimax Engine Core</span>
-                                </div>
+                            <div class="perf-meter">
+                                <div class="perf-gauge-wrap">
+                                  <svg class="perf-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+                                      <!-- Track arc -->
+                                      <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12" stroke-linecap="round"/>
+                                      <!-- Gold fill arc -->
+                                      <path class="perf-arc" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#goldGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="251"/>
+                                      <!-- Needle -->
+                                      <line class="perf-needle" x1="100" y1="100" x2="100" y2="30" stroke="#f0c040" stroke-width="2.5" stroke-linecap="round" transform-origin="100 100"/>
+                                      <!-- Center dot -->
+                                      <circle cx="100" cy="100" r="6" fill="#f0c040" filter="url(#glow)"/>
+                                      <defs>
+                                          <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                              <stop offset="0%" stop-color="#d4a020"/>
+                                              <stop offset="100%" stop-color="#ffeaa7"/>
+                                          </linearGradient>
+                                          <filter id="glow">
+                                              <feGaussianBlur stdDeviation="2" result="blur"/>
+                                              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                          </filter>
+                                      </defs>
+                                  </svg>
+                                  <div class="perf-value-wrap">
+                                      <span class="perf-value" id="perfValue">0</span>
+                                      <span class="perf-unit">k nodes/s</span>
+                                  </div>
+                              </div>
+                              <div class="perf-chips">
+                                  <div class="perf-chip">
+                                      <span class="perf-chip-dot"></span>
+                                      <span class="perf-chip-label">Depth</span>
+                                      <span class="perf-chip-val" id="depthVal">0</span>
+                                  </div>
+                                  <div class="perf-chip">
+                                      <span class="perf-chip-dot green"></span>
+                                      <span class="perf-chip-label">Alpha-Beta</span>
+                                      <span class="perf-chip-val">ON</span>
+                                  </div>
+                                  <div class="perf-chip">
+                                      <span class="perf-chip-dot blue"></span>
+                                      <span class="perf-chip-label">Engine</span>
+                                      <span class="perf-chip-val">C++17</span>
+                                  </div>
+                              </div>
                             </div>
-                        </div>
+                          </div>
                         <div class="about-card-content">
                             <span class="about-card-tag">Technical Architecture</span>
                             <h3 class="about-card-title">Fast by Design. Powerful by Nature.</h3>
@@ -1352,6 +1370,55 @@
         });
     });
   </script>
+  <script>
+    // ── Performance Meter Animation ──
+    (function() {
+        const perfValue = document.getElementById('perfValue');
+        const depthVal  = document.getElementById('depthVal');
+        const arc       = document.querySelector('.perf-arc');
+        const needle    = document.querySelector('.perf-needle');
+
+        if (!perfValue || !arc || !needle) return;
+
+        const maxNodes  = 850;
+        const maxDepth  = 12;
+        const arcLength = 251;
+
+        let current = 0;
+        let direction = 1;
+        let frame;
+
+        function animate() {
+            current += direction * (Math.random() * 18 + 6);
+
+            if (current >= maxNodes) { current = maxNodes; direction = -1; }
+            if (current <= 80)       { current = 80;       direction =  1; }
+
+            const pct    = current / maxNodes;
+            const offset = arcLength - pct * arcLength;
+            const angle  = -90 + pct * 180;
+            const depth  = Math.round(pct * maxDepth);
+
+            arc.style.strokeDashoffset    = offset;
+            needle.style.transform        = `rotate(${angle}deg)`;
+            perfValue.textContent         = Math.round(current);
+            if (depthVal) depthVal.textContent = depth;
+
+            frame = setTimeout(animate, 120);
+        }
+
+        // start when card 3 is visible
+        const perfObserver = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) animate();
+                else clearTimeout(frame);
+            });
+        }, { threshold: 0.3 });
+
+        const card3 = document.querySelectorAll('.about-card')[2];
+        if (card3) perfObserver.observe(card3);
+    })();
+  </script>  
       <script src="{% static 'game/js/dropdown.js' %}"></script>
   </body>
 </html>
