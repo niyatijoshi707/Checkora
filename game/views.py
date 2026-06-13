@@ -1770,20 +1770,27 @@ def stats_view(request):
         "puzzle_stats": puzzle_stats,
     })
 
+
 @login_required
 def leaderboard_view(request):
-    leaderboard = PuzzleStats.objects.select_related(
-        "user"
-    ).order_by(
-        "-puzzles_solved",
-        "-best_streak"
-    )
+    try:
+        leaderboard = PuzzleStats.objects.select_related(
+            "user"
+        ).order_by(
+            "-puzzles_solved",
+            "-best_streak"
+        )
+    except Exception:
+        leaderboard = PuzzleStats.objects.none()
 
-    chess_leaderboard = PlayerRating.objects.select_related(
-        "user"
-    ).order_by(
-        "-rating"
-    )[:50]
+    try:
+        chess_leaderboard = PlayerRating.objects.select_related(
+            "user"
+        ).order_by(
+            "-rating"
+        )[:50]
+    except Exception:
+        chess_leaderboard = PlayerRating.objects.none()
 
     return render(
         request,
@@ -1793,6 +1800,7 @@ def leaderboard_view(request):
             "chess_leaderboard": chess_leaderboard,
         }
     )
+
 
 @login_required
 @require_POST
@@ -1816,6 +1824,7 @@ def update_puzzle_stats(request):
     )
 
     return JsonResponse({"success": True})
+
 
 def puzzle_stats_view(request):
     return JsonResponse({
@@ -3323,23 +3332,32 @@ def lesson_map_view(request):
 
 @login_required
 def achievements_view(request):
-    achievements = Achievement.objects.all().order_by(
-        "category",
-        "title"
-    )
-
-    unlocked = set(
-        UserAchievement.objects.filter(
-            user=request.user
-        ).values_list(
-            "achievement_id",
-            flat=True
+    try:
+        achievements = Achievement.objects.all().order_by(
+            "category",
+            "title"
         )
-    )
+    except Exception:
+        achievements = Achievement.objects.none()
 
-    featured_badges = FeaturedBadge.objects.filter(
-        user=request.user
-    ).select_related("achievement")
+    try:
+        unlocked = set(
+            UserAchievement.objects.filter(
+                user=request.user
+            ).values_list(
+                "achievement_id",
+                flat=True
+            )
+        )
+    except Exception:
+        unlocked = set()
+
+    try:
+        featured_badges = FeaturedBadge.objects.filter(
+            user=request.user
+        ).select_related("achievement")
+    except Exception:
+        featured_badges = FeaturedBadge.objects.none()
 
     return render(
         request,
