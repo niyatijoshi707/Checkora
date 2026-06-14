@@ -92,34 +92,51 @@ Join our Discord community for updates, support, and games: https://discord.gg/D
 
 ## Quick Start
 
+**1. Clone the repository**
 ```bash
-# 1. Clone the repository
 git clone https://github.com/Checkora/Checkora.git
 cd Checkora
+```
 
-# 2. Set up a virtual environment
+**2. Set up a virtual environment**
+
+> **Note:** Django 6.0 requires Python 3.12 or higher. If you have multiple versions on Windows, use a compatible installed version, for example: `py -3.12 -m venv venv`.
+
+**On Windows:**
+```powershell
 python -m venv venv
-venv\Scripts\activate        # Windows
-source venv/bin/activate     # macOS / Linux
+venv\Scripts\Activate.ps1
+```
 
-# Note: Django 6.0 requires Python 3.12 or higher. If you have multiple
-# versions on Windows, use a compatible installed version, e.g.:
-# py -3.12 -m venv venv
+If you see the error *"Script execution is disabled on this system"*, run the following command in PowerShell before activating:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+This temporarily allows script execution for the current session. For more details, see the [Troubleshooting Guide](#troubleshooting-guide).
 
-# 3. Install dependencies
+**On macOS / Linux:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+**3. Install dependencies**
+```bash
 pip install -r requirements.txt
+```
 
-# 4. Set up environment variables
-# Copy example env file
-# Windows (PowerShell)
-copy .env.example .env
+**4. Set up environment variables**
 
-# macOS / Linux
-cp .env.example .env
+Copy the example environment file:
+* **Windows (PowerShell):** `copy .env.example .env`
+* **macOS / Linux:** `cp .env.example .env`
 
-# Open `.env` and set SECRET_KEY if needed
-# Configure EMAIL_HOST_USER and EMAIL_HOST_PASSWORD for OTP and password reset emails
-# 5. Run migrations and start the server
+Open `.env` and configure:
+* `SECRET_KEY` if needed.
+* `EMAIL_HOST_USER` and `EMAIL_HOST_PASSWORD` for OTP and password reset emails.
+
+**5. Run migrations and start the server**
+```bash
 python manage.py migrate
 python manage.py runserver
 ```
