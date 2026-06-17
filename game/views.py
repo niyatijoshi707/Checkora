@@ -3538,12 +3538,20 @@ def toggle_discussion_bookmark(request, discussion_id):
     if not created:
         bookmark.delete()
 
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER")
+    if next_url:
+        return redirect(next_url)
+
     return redirect("forum")
 
 def forum_detail(request, discussion_id):
     discussion = get_object_or_404(Discussion, id=discussion_id)
     replies = discussion.replies.select_related("user")
     form = ReplyForm()
+
+    is_bookmarked = False
+    if request.user.is_authenticated:
+        is_bookmarked = discussion.bookmarks.filter(user=request.user).exists()
 
     return render(
         request,
@@ -3552,6 +3560,7 @@ def forum_detail(request, discussion_id):
             "discussion": discussion,
             "replies": replies,
             "form": form,
+            "is_bookmarked": is_bookmarked,
         }
     )
 

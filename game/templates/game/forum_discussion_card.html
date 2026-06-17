@@ -9,25 +9,17 @@
 
                 {% if user.is_authenticated %}
                 <form method="post"
-                      action="{% url 'toggle_discussion_bookmark' discussion.id %}"
-                      class="forum-bookmark-form"
-                      onclick="event.stopPropagation();">
+                    action="{% url 'toggle_discussion_bookmark' discussion.id %}"
+                    class="forum-bookmark-form"
+                    onclick="event.stopPropagation();">
                     {% csrf_token %}
 
                     <button type="submit"
                             class="forum-bookmark-btn {% if discussion.id in bookmarked_ids %}bookmarked{% endif %}"
                             title="{% if discussion.id in bookmarked_ids %}Remove bookmark{% else %}Bookmark{% endif %}">
-                        <span class="bookmark-icon">
-                            {% if discussion.id in bookmarked_ids %}★{% else %}☆{% endif %}
-                        </span>
-
-                        <span class="bookmark-text">
-                            {% if discussion.id in bookmarked_ids %}
-                                Bookmarked
-                            {% else %}
-                                Bookmark
-                            {% endif %}
-                        </span>
+                        <svg class="bookmark-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/>
+                        </svg>
                     </button>
                 </form>
                 {% endif %}

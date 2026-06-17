@@ -514,47 +514,35 @@
 .forum-bookmark-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    width: 2.35rem;
-    overflow: hidden;
-
-    background: rgba(240, 192, 64, 0.07);
-    border: 1px solid rgba(240, 192, 64, 0.18);
-    color: var(--accent-gold);
-
-    border-radius: 999px;
-    padding: 0.35rem 0.55rem;
-
-    font-family: inherit;
-    font-size: 0.78rem;
-    font-weight: 700;
-
+    justify-content: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+    border-radius: 8px;
     cursor: pointer;
-    white-space: nowrap;
-
-    transition:
-        width 0.25s ease,
-        background 0.25s ease,
-        border-color 0.25s ease,
-        box-shadow 0.25s ease;
+    transition: background 0.2s ease;
 }
 
 .forum-bookmark-btn:hover {
-    width: 7.2rem;
-    background: rgba(240, 192, 64, 0.11);
-    border-color: rgba(240, 192, 64, 0.35);
-    box-shadow: 0 0 12px rgba(240, 192, 64, 0.08);
+    background: rgba(240, 192, 64, 0.08);
 }
 
 .forum-bookmark-btn.bookmarked {
-    width: 8.2rem;
+    width: 3rem;
     background: rgba(240, 192, 64, 0.12);
     border-color: rgba(240, 192, 64, 0.32);
 }
 
 .bookmark-icon {
-    font-size: 1rem;
-    line-height: 1;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: var(--accent-gold);
+    stroke-width: 1.8;
+    stroke-linejoin: round;
+    transition: fill 0.2s ease;
 }
 
 .bookmark-text {
@@ -565,6 +553,10 @@
 .forum-bookmark-btn:hover .bookmark-text,
 .forum-bookmark-btn.bookmarked .bookmark-text {
     opacity: 1;
+}
+
+.forum-bookmark-btn.bookmarked .bookmark-icon {
+    fill: var(--accent-gold);
 }
 
 @media (max-width: 600px) {
