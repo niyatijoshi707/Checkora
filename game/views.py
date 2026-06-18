@@ -1821,20 +1821,23 @@ def update_puzzle_stats(request):
     if not isinstance(data, dict):
         return JsonResponse({'error': 'invalid json'}, status=400)
 
-    stats, _ = PuzzleStats.objects.get_or_create(
+    stats = PuzzleStats.objects.filter(
         user=request.user
-    )
+    ).first()
 
     fields = ["puzzles_solved", "current_streak", "best_streak", "daily_completions"]
     validated_data = {}
     for field in fields:
-        val = data.get(field, getattr(stats, field))
+        val = data.get(field, getattr(stats, field) if stats is not None else 0)
         if not isinstance(val, int) or isinstance(val, bool) or val < 0:
             return JsonResponse({'error': f'{field} must be a non-negative integer'}, status=400)
         validated_data[field] = val
 
     if validated_data["best_streak"] < validated_data["current_streak"]:
         return JsonResponse({'error': 'best_streak must be greater than or equal to current_streak'}, status=400)
+
+    if stats is None:
+        stats = PuzzleStats(user=request.user)
 
     stats.puzzles_solved = validated_data["puzzles_solved"]
     stats.current_streak = validated_data["current_streak"]

@@ -3134,3 +3134,16 @@ class UpdatePuzzleStatsViewTest(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(json.loads(response.content), {'error': 'best_streak must be greater than or equal to current_streak'})
 
+    def test_invalid_validation_does_not_create_db_record(self):
+        from . import views
+        from game.models import PuzzleStats
+        self.assertFalse(PuzzleStats.objects.filter(user=self.user).exists())
+        payload = {
+            'puzzles_solved': -5,
+        }
+        request = self.factory.post('/api/puzzle-stats/update/', data=json.dumps(payload), content_type='application/json')
+        request.user = self.user
+        response = views.update_puzzle_stats(request)
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(PuzzleStats.objects.filter(user=self.user).exists())
+
