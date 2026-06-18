@@ -1351,8 +1351,8 @@ class StatsCleanupTest(TestCase):
         response = self.client.get('/stats/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'No Match Records Found')
-        # Summary cards should show 21 cards (17 original + 4 PvP cards)
-        self.assertContains(response, '<div class="num">0</div>', count=21)
+        # Summary cards should show 17 cards
+        self.assertContains(response, '<div class="num">0</div>', count=17)
         # No <tr> should be present in the tbody
         self.assertNotContains(response, '<tr><td>')
 
@@ -1374,32 +1374,10 @@ class StatsCleanupTest(TestCase):
         self.GameResult.objects.create(
             user=self.user_a, mode='ai', winner='draw', player_color='white', end_reason='stalemate'
         )
-        # User A plays PvP games:
-        # 1. White wins
-        self.GameResult.objects.create(
-            user=self.user_a, mode='pvp', winner='white', player_color='white', end_reason='checkmate'
-        )
-        # 2. Black wins
-        self.GameResult.objects.create(
-            user=self.user_a, mode='pvp', winner='black', player_color='white', end_reason='checkmate'
-        )
-        # 3. Black wins
-        self.GameResult.objects.create(
-            user=self.user_a, mode='pvp', winner='black', player_color='white', end_reason='checkmate'
-        )
-        # 4. Draw
-        self.GameResult.objects.create(
-            user=self.user_a, mode='pvp', winner='draw', player_color='white', end_reason='stalemate'
-        )
         # User B has 5 AI wins
         for _ in range(5):
             self.GameResult.objects.create(
                 user=self.user_b, mode='ai', winner='white', player_color='white', end_reason='checkmate'
-            )
-        # User B has 3 PvP games
-        for _ in range(3):
-            self.GameResult.objects.create(
-                user=self.user_b, mode='pvp', winner='white', player_color='white', end_reason='checkmate'
             )
 
         self.client.login(username='usera', password='password123')
@@ -1407,25 +1385,7 @@ class StatsCleanupTest(TestCase):
         self.assertContains(response, '<div class="num">4</div>')  # Total AI Games
         self.assertContains(response, '<div class="num">2</div>')  # User Wins vs AI
         self.assertContains(response, '<div class="num">1</div>')  # AI Wins
-        # Assert AI draws and PvP draws count=2
-        self.assertContains(
-            response,
-            '<div class="card"><div class="num">1</div><div class="label">Draws</div></div>',
-            count=2
-        )
-        # Assert PvP specific cards
-        self.assertContains(
-            response,
-            '<div class="card"><div class="num">4</div><div class="label">Total PvP Games</div></div>'
-        )
-        self.assertContains(
-            response,
-            '<div class="card"><div class="num">1</div><div class="label">White Wins</div></div>'
-        )
-        self.assertContains(
-            response,
-            '<div class="card"><div class="num">2</div><div class="label">Black Wins</div></div>'
-        )
+        self.assertContains(response, '<div class="num">1</div>')  # Draws
 
     def test_filter_invalid_records(self):
         """Records with empty mode should be filtered out."""

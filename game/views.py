@@ -1647,13 +1647,6 @@ def stats_view(request):
     # Handle explicit edge cases (e.g. division by zero for win rate)
     win_percentage = (user_ai_wins / ai_total * 100) if ai_total > 0 else 0
 
-    # PvP Statistics
-    pvp_results = user_results.filter(mode='pvp')
-    pvp_total = pvp_results.count()
-    pvp_white_wins = pvp_results.filter(winner='white').count()
-    pvp_black_wins = pvp_results.filter(winner='black').count()
-    pvp_draws = pvp_results.filter(winner='draw').count()
-
     rating, _ = PlayerRating.objects.get_or_create(
         user=request.user
     )
@@ -1781,11 +1774,6 @@ def stats_view(request):
         'progress': progress,
         'rating': rating,
         'history': recent_history,
-
-        'pvp_total': pvp_total,
-        'pvp_white_wins': pvp_white_wins,
-        'pvp_black_wins': pvp_black_wins,
-        'pvp_draws': pvp_draws,
         
         "total_games": total_games,
         "total_wins": total_wins,
