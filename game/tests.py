@@ -3183,7 +3183,7 @@ class ChessPuzzleDashboardTests(TestCase):
         self.assertTemplateUsed(response, 'game/puzzle_list.html')
 
     def test_puzzles_list_api_returns_all_without_solution(self):
-        """The listing API returns all puzzles and excludes their solution arrays."""
+        """The listing API returns all puzzles and excludes solutions."""
         url = reverse('puzzles_list_api')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -3200,7 +3200,7 @@ class ChessPuzzleDashboardTests(TestCase):
     def test_puzzles_list_api_difficulty_filtering(self):
         """The listing API supports filtering by difficulty."""
         url = reverse('puzzles_list_api')
-        
+
         # Filter easy
         response = self.client.get(url, {'difficulty': 'easy'})
         data = response.json()
@@ -3216,15 +3216,18 @@ class ChessPuzzleDashboardTests(TestCase):
     def test_puzzles_list_api_search_filtering(self):
         """The listing API supports filtering by search queries on title."""
         url = reverse('puzzles_list_api')
-        
+
         response = self.client.get(url, {'search': 'Tactics'})
         data = response.json()
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['title'], "Medium Tactics Puzzle")
 
     def test_puzzle_detail_api_excludes_solution(self):
-        """The puzzle detail API returns details for a single puzzle without its solution."""
-        url = reverse('puzzle_detail_api', kwargs={'puzzle_id': self.puzzle_easy.id})
+        """Detail API returns details for a single puzzle without solution."""
+        url = reverse(
+            'puzzle_detail_api',
+            kwargs={'puzzle_id': self.puzzle_easy.id}
+        )
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         data = response.json()
@@ -3234,14 +3237,17 @@ class ChessPuzzleDashboardTests(TestCase):
 
     def test_puzzle_solution_api_returns_solution(self):
         """The puzzle solution API returns the correct solution array."""
-        url = reverse('puzzle_solution_api', kwargs={'puzzle_id': self.puzzle_easy.id})
+        url = reverse(
+            'puzzle_solution_api',
+            kwargs={'puzzle_id': self.puzzle_easy.id}
+        )
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data['solution'], ["e2e4"])
 
     def test_daily_puzzle_api_excludes_solution(self):
-        """The daily puzzle API endpoint now excludes solutions to prevent cheating."""
+        """The daily puzzle API endpoint now excludes solutions."""
         from django.utils import timezone
         # Assign self.puzzle_easy as today's daily puzzle
         self.puzzle_easy.date = timezone.localdate()
@@ -3253,5 +3259,3 @@ class ChessPuzzleDashboardTests(TestCase):
         data = response.json()
         self.assertEqual(data['id'], self.puzzle_easy.id)
         self.assertNotIn('solution', data)
-
-

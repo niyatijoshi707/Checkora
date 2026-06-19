@@ -53,8 +53,16 @@ urlpatterns = [
     path("api/puzzles/daily/", views.get_daily_puzzle, name="daily_puzzle"),
     path("puzzles/", views.puzzles_view, name="puzzles"),
     path("api/puzzles/", views.puzzles_list_api, name="puzzles_list_api"),
-    path("api/puzzles/<int:puzzle_id>/", views.puzzle_detail_api, name="puzzle_detail_api"),
-    path("api/puzzles/<int:puzzle_id>/solution/", views.puzzle_solution_api, name="puzzle_solution_api"),
+    path(
+        "api/puzzles/<int:puzzle_id>/",
+        views.puzzle_detail_api,
+        name="puzzle_detail_api"
+    ),
+    path(
+        "api/puzzles/<int:puzzle_id>/solution/",
+        views.puzzle_solution_api,
+        name="puzzle_solution_api"
+    ),
     
     # Badges & Achievements
     path("achievements/", views.achievements_view, name="achievements"),
