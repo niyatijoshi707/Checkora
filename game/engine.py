@@ -91,6 +91,8 @@ class ChessGame:
         # (row, col) of the square a pawn can capture en passant
         self.en_passant_target = None
         self.halfmove_clock = 0
+        self.initial_fullmove = 1
+        self.initial_turn_was_black = False
         self.repetition_history = [self.generate_position_key()]
         self.repetition_counts = {self.repetition_history[0]: 1}
         self.game_status = 'active'
@@ -244,11 +246,22 @@ DP cache is intentionally excluded to save cookie space."""
         # Parse halfmove clock (field 5)
         if len(parts) >= 5:
             try:
-                game.halfmove_clock = int(parts[4])
+                game.halfmove_clock = max(0, int(parts[4]))
             except ValueError:
                 game.halfmove_clock = 0
         else:
             game.halfmove_clock = 0
+
+        # Parse fullmove clock (field 6)
+        if len(parts) >= 6:
+            try:
+                game.initial_fullmove = max(1, int(parts[5]))
+            except ValueError:
+                game.initial_fullmove = 1
+        else:
+            game.initial_fullmove = 1
+
+        game.initial_turn_was_black = (active_color == 'b')
 
         game.move_history = []
         game.captured = {'white': [], 'black': []}
@@ -921,8 +934,10 @@ DP cache is intentionally excluded to save cookie space."""
         # Halfmove clock
         halfmove = str(self.halfmove_clock)
 
-        # Fullmove clock starts at 1, incremented after black's move.
-        fullmove = str(1 + (len(self.move_history) // 2))
+        # Fullmove clock
+        offset = 1 if getattr(self, 'initial_turn_was_black', False) else 0
+        fullmove_count = getattr(self, 'initial_fullmove', 1)
+        fullmove = str(fullmove_count + ((len(self.move_history) + offset) // 2))
 
         return f"{base_fen} {ep_str} {halfmove} {fullmove}"
 
