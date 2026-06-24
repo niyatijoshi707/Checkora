@@ -19,6 +19,33 @@
 
     <link rel="stylesheet" href="{% static 'game/css/board.css' %}">
     <link rel="stylesheet" href="{% static 'game/css/toast.css' %}">
+    <style>
+        /* ── Navbar avatar thumbnail ── */
+        .nav-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1.5px solid rgba(250, 204, 21, 0.6);
+            vertical-align: middle;
+            margin-right: 4px;
+            flex-shrink: 0;
+        }
+        .nav-avatar-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            border: 1.5px solid rgba(255,255,255,0.15);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 4px;
+            flex-shrink: 0;
+            color: #94a3b8;
+            vertical-align: middle;
+        }
+    </style>
 
     <!-- Vercel Web Analytics -->
     <script>
@@ -293,8 +320,15 @@
             {% if user.is_authenticated %}
 
             <div class="profile-dropdown">
-                <button class="profile-btn">
-                    {{ user.username }} ⌄
+                <button class="profile-btn" style="display:flex;align-items:center;gap:4px;">
+                    {% if user.profile.avatar %}
+                      <img src="{{ user.profile.avatar }}" class="nav-avatar" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
+                    {% else %}
+                      <span class="nav-avatar-icon" aria-hidden="true" style="display:flex;align-items:center;justify-content:center;width:24px;height:24px;background:#333;border-radius:50%;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </span>
+                    {% endif %}
+                    {{ user.username }} ⌔
                 </button>
 
                 <div class="dropdown-content">
@@ -316,6 +350,10 @@
 
                     <a href="{% url 'puzzles' %}">
                         🧩 Puzzles
+                    </a>
+
+                    <a href="{% url 'upload_avatar' %}">
+                        Profile Picture
                     </a>
 
                     <a href="{% url 'delete_account' %}" class="delete-option"> Delete Account </a>
