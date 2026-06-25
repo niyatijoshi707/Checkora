@@ -134,11 +134,11 @@ h1 {
 .table-container {
     width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     margin-top: 10px;
     background: var(--card-bg, #16162a);
     border-radius: 12px;
-    overflow: hidden;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
