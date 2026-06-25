@@ -72,6 +72,11 @@ Join our Discord community for updates, support, and games: https://discord.gg/D
 
 ---
 
+## Documentation
+- [Feature Guide](./FEATURES.md)
+
+---
+
 ## Quick Start
 
 ```bash
