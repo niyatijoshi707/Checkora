@@ -99,7 +99,8 @@ Handles:
 
 User Move
 → board.js
-→ Backend Validation
+→ Client-side Validation (Stockfish Worker)
+→ Backend Synchronization (when required)
 → Board Update
 → UI Refresh
 
