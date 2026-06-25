@@ -2637,8 +2637,22 @@
         // 6. Opening Book and Review Highlights
         let analysisData = null;
         try {
+            let fenHistory = [];
+            if (window.Chess) {
+                let tempChess = new window.Chess();
+                fenHistory.push(tempChess.fen());
+                for (let move of replayMoves) {
+                    let res = tempChess.move(move);
+                    if (!res) {
+                        break;
+                    }
+                    fenHistory.push(tempChess.fen());
+                }
+            }
+
             analysisData = await post('/api/analyze-game/', {
                 moves: replayMoves,
+                fen_history: fenHistory,
                 result: resultState,
                 reason: reason
             });
@@ -2664,6 +2678,21 @@
 
             const proEl = document.getElementById('resAnalysisPromotions');
             if (proEl) proEl.textContent = analysisData.promotions || 0;
+
+            const accuracyEl = document.getElementById('resAccuracyScore');
+            if (accuracyEl && analysisData.accuracy !== undefined) {
+                accuracyEl.textContent = `${analysisData.accuracy}%`;
+            }
+
+            const mistakesEl = document.getElementById('resMistakesCount');
+            if (mistakesEl && analysisData.mistakes !== undefined) {
+                mistakesEl.textContent = analysisData.mistakes;
+            }
+
+            const blundersEl = document.getElementById('resBlundersCount');
+            if (blundersEl && analysisData.blunders !== undefined) {
+                blundersEl.textContent = analysisData.blunders;
+            }
         }
 
         const bestMoveEl = document.getElementById('resBestMove');
@@ -2680,8 +2709,19 @@
 
         const blunderEl = document.getElementById('resBlunder');
         if (blunderEl) {
-            blunderEl.textContent = replayMoves.length > 20 ? '1 mistake (Full review)' : 'None';
+            const blunderLabel = blunderEl.previousElementSibling;
+            if (analysisData && analysisData.blunders > 0) {
+                blunderEl.textContent = `${analysisData.blunders} Blunder${analysisData.blunders > 1 ? 's' : ''}`;
+                if (blunderLabel) blunderLabel.textContent = 'Blunder';
+            } else if (analysisData && analysisData.mistakes > 0) {
+                blunderEl.textContent = `${analysisData.mistakes} Mistake${analysisData.mistakes > 1 ? 's' : ''}`;
+                if (blunderLabel) blunderLabel.textContent = 'Mistake';
+            } else {
+                blunderEl.textContent = 'None';
+                if (blunderLabel) blunderLabel.textContent = 'Blunder';
+            }
         }
+
 
         // Delay the overlay and celebration effects by 0.5 seconds
         setTimeout(() => {

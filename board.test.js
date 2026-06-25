@@ -60,6 +60,16 @@ document.body.innerHTML = `
   <div id="blackCapturedName"></div>
   <div id="turnBadgeText"></div>
   <input type="checkbox" id="showCoordinatesCheckbox">
+  <!-- Heuristic Report Stats -->
+  <div id="resAccuracyScore"></div>
+  <div id="resMistakesCount"></div>
+  <div id="resBlundersCount"></div>
+  <div id="resAnalysisCaptures"></div>
+  <div id="resAnalysisChecks"></div>
+  <div id="resAnalysisCheckmates"></div>
+  <div id="resAnalysisPromotions"></div>
+  <div id="resBestMove"></div>
+  <div id="resBlunder"></div>
 `;
 
 
@@ -103,6 +113,19 @@ global.fetch = jest.fn((url, options) => {
         black_score: 0,
         captured_pieces: { white: [], black: [] },
         move_history: []
+      })
+    });
+  }
+  if (url && url.includes('/api/analyze-game/')) {
+    return Promise.resolve({
+      json: () => Promise.resolve({
+        accuracy: 95,
+        mistakes: 1,
+        blunders: 0,
+        captures: 2,
+        checks: 1,
+        checkmates: 0,
+        promotions: 0
       })
     });
   }
