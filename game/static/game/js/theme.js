@@ -1,34 +1,37 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const safeLocalStorage = {
-        get(key) {
-            try {
-                return window.localStorage.getItem(key);
-            } catch (error) {
-                return null;
-            }
-        },
-        set(key, value) {
-            try {
-                window.localStorage.setItem(key, value);
-            } catch (error) {
-                // ignore restricted storage environments
-            }
+// 1. Theme detection and attribute setting run immediately at the top-level.
+// This prevents layout flashes and transition animations on initial page load.
+const safeLocalStorage = {
+    get(key) {
+        try {
+            return window.localStorage.getItem(key);
+        } catch (error) {
+            return null;
         }
-    };
+    },
+    set(key, value) {
+        try {
+            window.localStorage.setItem(key, value);
+        } catch (error) {
+            // ignore restricted storage environments
+        }
+    }
+};
 
-    const storedTheme = safeLocalStorage.get("theme");
-    const legacyTheme = safeLocalStorage.get("chessBoardTheme");
-    const validStoredTheme = storedTheme === "light" || storedTheme === "dark" ? storedTheme : null;
-    const savedTheme =
-        validStoredTheme ||
-        (legacyTheme === "light" || legacyTheme === "dark" ? legacyTheme : null) ||
-        "dark";
+const storedTheme = safeLocalStorage.get("theme");
+const legacyTheme = safeLocalStorage.get("chessBoardTheme");
+const validStoredTheme = storedTheme === "light" || storedTheme === "dark" ? storedTheme : null;
+const savedTheme =
+    validStoredTheme ||
+    (legacyTheme === "light" || legacyTheme === "dark" ? legacyTheme : null) ||
+    "dark";
 
-    document.documentElement.setAttribute(
-        "data-theme",
-        savedTheme
-    );
+document.documentElement.setAttribute(
+    "data-theme",
+    savedTheme
+);
 
+// 2. DOM-dependent logic runs after content is loaded.
+document.addEventListener("DOMContentLoaded", () => {
     const toggle = document.getElementById("themeToggle");
 
     const updateToggleState = (theme) => {
@@ -44,7 +47,38 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         toggle.textContent = theme === "light" ? "☀️" : "🌙";
     };
+
+    // Helper to safely trigger toast notifications, dynamically loading
+    // toast.js and toast.css on demand if they aren't statically loaded on the page.
+    const showThemeToast = (message, type = "info") => {
+        if (typeof window.showToast === "function") {
+            window.showToast(message, type);
+        } else {
+            // Dynamically load toast.css if not present
+            if (!document.getElementById("toast-css-dynamic")) {
+                const link = document.createElement("link");
+                link.id = "toast-css-dynamic";
+                link.rel = "stylesheet";
+                link.href = "/static/game/css/toast.css";
+                document.head.appendChild(link);
+            }
+            // Dynamically load toast.js if not present
+            if (!document.getElementById("toast-js-dynamic")) {
+                const script = document.createElement("script");
+                script.id = "toast-js-dynamic";
+                script.src = "/static/game/js/toast.js";
+                script.onload = () => {
+                    if (typeof window.showToast === "function") {
+                        window.showToast(message, type);
+                    }
+                };
+                document.body.appendChild(script);
+            }
+        }
+    };
+
     updateToggleState(savedTheme);
+
     if (toggle) {
         toggle.addEventListener("click", () => {
             const currentTheme = document.documentElement.getAttribute("data-theme");
@@ -53,6 +87,9 @@ document.addEventListener("DOMContentLoaded", () => {
             document.documentElement.setAttribute("data-theme", newTheme);
             safeLocalStorage.set("theme", newTheme);
             updateToggleState(newTheme);
+
+            // Trigger the toast notification
+            showThemeToast(`Switched to ${newTheme === "light" ? "Light" : "Dark"} Mode`, "info");
         });
     }
 });
