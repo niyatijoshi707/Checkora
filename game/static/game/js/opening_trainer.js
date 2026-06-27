@@ -9,6 +9,7 @@ let currentMove = 0;
 let userColor = "w"; // 'w' or 'b'
 let selectedSquare = null;
 let lastMoveHighlight = null;
+let opponentReplyTimeout = null;
 const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
 // Standard 8x8 starting setup
@@ -243,7 +244,8 @@ function makeUserMove(fromRow, fromCol, toRow, toCol) {
         }
 
         // Auto-play opponent response after 800ms
-        setTimeout(() => {
+        if (opponentReplyTimeout) clearTimeout(opponentReplyTimeout);
+        opponentReplyTimeout = setTimeout(() => {
             playOpponentMove();
         }, 800);
 
@@ -345,7 +347,7 @@ function renderBoard() {
             const piece = boardState[actualRow][actualCol];
             if (piece) {
                 const img = document.createElement("img");
-                img.src = `https://images.chesscomfiles.com/chess-themes/pieces/neo/150/${piece}.png`;
+                img.src = `/static/game/pieces/${piece}.png`;
                 img.alt = piece;
                 img.draggable = true;
                 img.addEventListener("dragstart", (e) => handleDragStart(e, actualRow, actualCol));
@@ -365,6 +367,10 @@ function resetGame() {
     currentMove = 0;
     selectedSquare = null;
     lastMoveHighlight = null;
+    if (opponentReplyTimeout) {
+        clearTimeout(opponentReplyTimeout);
+        opponentReplyTimeout = null;
+    }
     boardState = [
         ["br", "bn", "bb", "bq", "bk", "bb", "bn", "br"],
         ["bp", "bp", "bp", "bp", "bp", "bp", "bp", "bp"],
@@ -383,7 +389,7 @@ function resetGame() {
 
     // If Black plays, the opponent makes the first White move immediately
     if (userColor === "b") {
-        setTimeout(() => {
+        opponentReplyTimeout = setTimeout(() => {
             playOpponentMove();
         }, 800);
     }
@@ -395,7 +401,9 @@ if (playWhiteBtn && playBlackBtn) {
         if (userColor === "w") return;
         userColor = "w";
         playWhiteBtn.classList.add("active");
+        playWhiteBtn.setAttribute("aria-pressed", "true");
         playBlackBtn.classList.remove("active");
+        playBlackBtn.setAttribute("aria-pressed", "false");
         resetGame();
     });
 
@@ -403,13 +411,21 @@ if (playWhiteBtn && playBlackBtn) {
         if (userColor === "b") return;
         userColor = "b";
         playBlackBtn.classList.add("active");
+        playBlackBtn.setAttribute("aria-pressed", "true");
         playWhiteBtn.classList.remove("active");
+        playWhiteBtn.setAttribute("aria-pressed", "false");
         resetGame();
     });
 }
 
 // Support manual move text box validation in sync with the visual board
 function validateMove(move) {
+    const isUserTurn = (userColor === "w" && currentMove % 2 === 0) || (userColor === "b" && currentMove % 2 === 1);
+    if (!isUserTurn) {
+        feedback.innerText = "⚠️ It is the opponent's turn. Please wait.";
+        return false;
+    }
+
     const expectedMove = OPENING_MOVES[currentMove];
     if (move.toLowerCase() === expectedMove.toLowerCase()) {
         const parsed = parseSAN(expectedMove, currentMove % 2 === 0 ? "w" : "b");
@@ -427,7 +443,8 @@ function validateMove(move) {
         } else {
             const nextTurnColor = currentMove % 2 === 0 ? "w" : "b";
             if (nextTurnColor !== userColor) {
-                setTimeout(() => {
+                if (opponentReplyTimeout) clearTimeout(opponentReplyTimeout);
+                opponentReplyTimeout = setTimeout(() => {
                     playOpponentMove();
                 }, 800);
             }

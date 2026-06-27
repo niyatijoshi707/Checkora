@@ -143,7 +143,6 @@ body{
     width: 85%;
     height: 85%;
     object-fit: contain;
-    pointer-events: none; /* Allows click & drag to be captured by the square wrapper */
 }
 
 /* Selection and Move Highlights */
